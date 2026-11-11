@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>食事ログ</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background-color: #f5f5f7; color: #333; margin: 0; }
+    h3 { text-align: center; color: #1d1d1f; margin-bottom: 20px; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    label { font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px; color: #666; }
+    select, input, button { width: 100%; padding: 12px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+    select:focus, input:focus { border-color: #0071e3; outline: none; }
+    
+    .btn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+    .quick-btn { background-color: #e8f0fe; color: #1a73e8; border: 1px solid #1a73e8; padding: 10px; font-size: 14px; margin-bottom: 0; cursor: pointer; }
+    .quick-btn:active { background-color: #d2e3fc; }
+    
+    .submit-btn { background-color: #34c759; color: white; border: none; font-size: 18px; font-weight: bold; margin-bottom: 0; cursor: pointer; }
+    .submit-btn:active { background-color: #248a3d; }
+    #message { text-align: center; color: #34c759; font-weight: bold; margin-top: 10px; min-height: 24px; }
+    
+    .hr-divider { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+  <h3>🍽️ レコーディングダイエット</h3>
+
+  <!-- 定番メニュークイック入力 -->
+  <div class="card">
+    <label>定番メニュー（タップで自動入力）</label>
+    <div class="btn-grid">
+      <button class="quick-btn" onclick="setQuick('5枚切り食パン', 190)">🍞 5枚切り食パン</button>
+      <button class="quick-btn" onclick="setQuick('バナナ1本', 90)">🍌 バナナ1本</button>
+      <button class="quick-btn" onclick="setQuick('オイコス', 92)">🥛 オイコス</button>
+      <button class="quick-btn" onclick="setQuick('サラダチキン', 65)">🐔 サラダチキン</button>
+    </div>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="card">
+    <label>時間帯</label>
+    <select id="mealType">
+      <option value="朝">朝食</option>
+      <option value="昼">昼食</option>
+      <option value="夜">夕食</option>
+      <option value="間食">間食</option>
+    </select>
+
+    <label>メニュー名</label>
+    <input type="text" id="menuName" placeholder="例：ねばねば豆腐">
+
+    <label>カロリー (kcal)</label>
+    <input type="number" id="calories" placeholder="例: 80">
+
+    <hr class="hr-divider">
+    <!-- ★歩数の入力欄を追加（夜のタイミングなどでまとめて入力もOK） -->
+    <label>本日の歩数（任意）</label>
+    <input type="number" id="steps" placeholder="例: 5000">
+
+    <!-- ★メモの入力欄を追加（任意） -->
+    <label>メモ（任意）</label>
+    <input type="text" id="memo" placeholder="例: 外食、体調など">
+
+    <button class="submit-btn" onclick="submitData()">シートに記録する</button>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    function setQuick(name, kcal) {
+      document.getElementById('menuName').value = name;
+      document.getElementById('calories').value = kcal;
+    }
+
+    function submitData() {
+      var mealType = document.getElementById('mealType').value;
+      var menuName = document.getElementById('menuName').value;
+      var calories = document.getElementById('calories').value;
+      var steps = document.getElementById('steps').value; // ★歩数を取得
+      var memo = document.getElementById('memo').value;   // ★メモを取得
+      var msgDiv = document.getElementById('message');
+
+      if (!menuName || !calories) {
+        alert("メニュー名とカロリーを入力してください");
+        return;
+      }
+
+      msgDiv.style.color = "#666";
+      msgDiv.innerText = "送信中...";
+
+      // GASの「addLog」関数に steps と memo も渡す
+      google.script.run
+        .withSuccessHandler(function(response) {
+          msgDiv.style.color = "#34c759";
+          msgDiv.innerText = response;
+          document.getElementById('menuName').value = "";
+          document.getElementById('calories').value = "";
+          // 歩数は夜に1回打つケースを想定し、送信後もフォームに残すかクリアするかはお好みで。今回は一旦クリアします
+          document.getElementById('steps').value = "";
+          document.getElementById('memo').value = "";
+        })
+        .withFailureHandler(function(err) {
+          msgDiv.style.color = "#ff3b30";
+          msgDiv.innerText = "エラーが発生しました";
+        })
+        .addLog(mealType, menuName, calories, steps, memo);
+    }
+  </script>
+</body>
+</html>
